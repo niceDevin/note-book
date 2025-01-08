@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记事本</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error-message {
+            color: red;
+            font-size: 14px;
+            display: none;
+        }
+        .login-link {
+            display: block;
+            margin-top: 20px;
+            color: #4CAF50;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 登录界面 -->
+    <div class="container" id="auth-container">
+        <h2>登录</h2>
+        <div class="error-message" id="login-error">用户名或密码错误</div>
+        <form id="login-form">
+            <input type="text" id="login-username" placeholder="用户名" required>
+            <input type="password" id="login-password" placeholder="密码" required>
+            <button type="submit">登录</button>
+        </form>
+        <a href="#" id="show-register-link" class="login-link">没有账户？点击这里注册</a>
+    </div>
+
+    <!-- 注册界面 -->
+    <div class="container" id="register-container" style="display: none;">
+        <h2>注册</h2>
+        <div class="error-message" id="register-error">用户名已存在</div>
+        <form id="register-form">
+            <input type="text" id="register-username" placeholder="用户名" required>
+            <input type="password" id="register-password" placeholder="密码" required>
+            <input type="password" id="register-confirm-password" placeholder="确认密码" required>
+            <button type="submit">注册</button>
+        </form>
+        <a href="#" id="show-login-link" class="login-link">已经有账户？点击这里登录</a>
+    </div>
+
+    <!-- 记事本界面 -->
+    <div class="container" id="notepad-container" style="display: none;">
+        <h2>欢迎来到记事本</h2>
+        <textarea id="note-text" placeholder="在这里写下你的笔记..."></textarea>
+        <button id="save-button">保存</button>
+        <button id="load-button">加载笔记</button>
+        <button id="logout-button">登出</button>
+    </div>
+
+    <script>
+        let users = JSON.parse(localStorage.getItem('users')) || {};  // 从localStorage中加载用户数据
+        let currentUser = null;  // 当前登录的用户
+
+        // 获取DOM元素
+        const authContainer = document.getElementById('auth-container');
+        const registerContainer = document.getElementById('register-container');
+        const notepadContainer = document.getElementById('notepad-container');
+
+        // 登录功能
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            // 检查用户是否存在并验证密码
+            if (users[username] && users[username].password === password) {
+                currentUser = username;
+                showNotepad();
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        });
+
+        // 注册功能
+        document.getElementById('register-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+
+            // 检查用户名是否已经存在
+            if (users[username]) {
+                document.getElementById('register-error').style.display = 'block';
+                return;
+            }
+
+            // 检查密码是否匹配
+            if (password !== confirmPassword) {
+                alert('密码与确认密码不匹配');
+                return;
+            }
+
+            // 注册新用户
+            users[username] = { password, notes: "" };
+            localStorage.setItem('users', JSON.stringify(users));
+
+            // 注册成功后跳转到登录界面
+            alert('注册成功，请登录');
+            registerContainer.style.display = 'none';
+            authContainer.style.display = 'block';
+        });
+
+        // 显示记事本界面
+        function showNotepad() {
+            authContainer.style.display = 'none';
+            registerContainer.style.display = 'none';
+            notepadContainer.style.display = 'block';
+
+            // 尝试加载之前保存的笔记
+            const savedNote = localStorage.getItem(`note_${currentUser}`);
+            if (savedNote) {
+                document.getElementById('note-text').value = savedNote;
+            }
+        }
+
+        // 保存笔记
+        document.getElementById('save-button').addEventListener('click', function() {
+            const noteText = document.getElementById('note-text').value;
+            if (noteText.trim() === '') {
+                alert('请写下笔记内容！');
+            } else {
+                localStorage.setItem(`note_${currentUser}`, noteText);
+                alert('笔记已保存');
+            }
+        });
+
+        // 加载笔记
+        document.getElementById('load-button').addEventListener('click', function() {
+            const savedNote = localStorage.getItem(`note_${currentUser}`);
+            if (savedNote) {
+                document.getElementById('note-text').value = savedNote;
+            } else {
+                alert('没有找到已保存的笔记');
+            }
+        });
+
+        // 登出功能
+        document.getElementById('logout-button').addEventListener('click', function() {
+            currentUser = null;
+            notepadContainer.style.display = 'none';
+            authContainer.style.display = 'block';
+        });
+
+        // 切换到注册界面
+        document.getElementById('show-register-link').addEventListener('click', function(event) {
+            event.preventDefault();
+            authContainer.style.display = 'none';
+            registerContainer.style.display = 'block';
+        });
+
+        // 切换到登录界面
+        document.getElementById('show-login-link').addEventListener('click', function(event) {
+            event.preventDefault();
+            registerContainer.style.display = 'none';
+            authContainer.style.display = 'block';
+        });
+    </script>
+
+</body>
+</html>
